@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <style type="text/css">
+      html { height: 100%; min-width: 1100px; }
+      body { height: 100%; margin: 0; padding: 0 }
+      #map-canvas { height: 80%; width:100%; margin-top: 15px; }
+      #inputs { margin-left: 30px; margin-top: 15px; float: left; }
+      #about { float: right; margin-right: 30px; text-align: right; }
+      .clear { clear: both; }
+      h1 { font-size: 125%; }
+    </style>
+    <script type="text/javascript"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCTKzuP93q6l-Q_ZqmI-jgTZS6eA5eI9AQ&sensor=false&libraries=visualization">
+    </script>
+  </head>
+  <body>
+    <div id="inputs">
+      Location file: <input type="file" id="file" name="file" /><br />
+      Max Intensity: <input type="number" id="intensity" name="intensity" value=100 /><br />
+      Radius: <input type="number" id="radius" name="radius" value=10 /><br />
+    </div>
+    <div id="about">
+      <h1>Location History Heatmap</h1>
+      Download your location history from Google using <a href="https://www.google.com/settings/takeout">Takeout</a> and then select the LocationHistory.json file.<br />
+      Source on <a href="https://github.com/mileswu/location-history-heatmaps">GitHub</a>. Copyright Miles Wu. BSD Licensed.
+    </div>
+    <div class="clear"></div>
+    <div id="map-canvas"/>
+  </body>
+
+  <script type="text/javascript">
+    var heatmap;
+    function parseFile(file) {
+      json = JSON.parse(file);
+      console.log("Data points: " + json["locations"].length);
+
+      var heatmapData = [];
+      for(var i = 0; i < json["locations"].length; i++) {
+        var data_point = json["locations"][i];
+        var loc = new google.maps.LatLng(data_point["latitudeE7"] / 10000000, data_point["longitudeE7"] / 10000000);
+        heatmapData.push(loc);
+      }
+      console.log("Data parsed");
+
+      heatmap = new google.maps.visualization.HeatmapLayer({
+        data: heatmapData,
+        maxIntensity: parseInt(document.getElementById("intensity").value),
+        radius: parseInt(document.getElementById("radius").value)
+      });
+      heatmap.setMap(map);
+      console.log("Heatmap created");
+    }
+
+    function handleFile(evt) {
+      var file = evt.target.files[0];
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        parseFile(reader.result);
+      }
+      reader.readAsText(file);
+    }
+
+    document.getElementById('file').addEventListener('change', handleFile, false);
+    document.getElementById('intensity').addEventListener('change', function() {
+      heatmap.set("maxIntensity", parseInt(document.getElementById("intensity").value))
+      }, false);
+    document.getElementById('radius').addEventListener('change', function() {
+      heatmap.set("radius", parseInt(document.getElementById("radius").value))
+      }, false);
+
+    var center = new google.maps.LatLng(37.774546, -92.433523);
+    var mapOptions = {
+      center: center,
+      zoom: 4
+    };
+    var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
+</script>
+</html>
